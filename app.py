@@ -157,6 +157,19 @@ def get_llm_model(device="cpu"):
         logger.error(f"Error in get_llm_model: {e}")
         st.error("Error initializing language model pipeline.")
         return None
+try:
+    with st.spinner("Loading models... This might take a few minutes."):
+        layout_predictor = get_layout_predictor()
+        model = get_ocr_model()
+        pipe = get_llm_model("cuda")
+        
+        if not all([layout_predictor, model, pipe]):
+            st.error("Failed to initialize one or more models. Please try again later.")
+            st.stop()
+except Exception as e:
+    logger.error(f"Error initializing models: {e}")
+    st.error("Error initializing models. Please try again later.")
+    st.stop()
 
 print("Models loaded")
 
