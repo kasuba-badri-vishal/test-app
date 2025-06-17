@@ -117,7 +117,7 @@ def get_ocr_model():
 @st.cache_resource
 def get_llm_model(device="cpu"):
     try:
-        model_id = "tiiuae/falcon-rw-1b"
+        model_id = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
         hf_token = st.secrets["hf_token"]
 
         # Load tokenizer
@@ -161,7 +161,7 @@ try:
     with st.spinner("Loading models... This might take a few minutes."):
         layout_predictor = get_layout_predictor()
         model = get_ocr_model()
-        pipe = get_llm_model("cuda")
+        pipe = get_llm_model("cpu")
         
         if not all([layout_predictor, model, pipe]):
             st.error("Failed to initialize one or more models. Please try again later.")
