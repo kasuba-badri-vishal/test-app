@@ -7,6 +7,7 @@ import json
 import datetime
 import logging
 import sys
+import torch
 
 from predict_output import clear_prediction_caches, predict_output
 
