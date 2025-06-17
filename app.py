@@ -117,7 +117,7 @@ def get_ocr_model():
 @st.cache_resource
 def get_llm_model(device="cpu"):
     try:
-        model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+        model_id = "tiiuae/falcon-rw-1b"
         hf_token = st.secrets["hf_token"]
 
         # Load tokenizer
