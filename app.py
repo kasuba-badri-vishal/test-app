@@ -116,59 +116,47 @@ def get_ocr_model():
 
 @st.cache_resource
 def get_llm_model(device="cpu"):
-    model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-    hf_token = st.secrets["hf_token"]
-
     try:
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_id,
-            token=hf_token,
-            trust_remote_code=True
-        )
-    except Exception as e:
-        logger.error(f"Error loading tokenizer: {e}")
-        st.error("Error loading tokenizer. Please check your Hugging Face token.")
-        return None
+        model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+        hf_token = st.secrets["hf_token"]
 
-    try:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_id,
-            device_map={"": device},   # Explicitly set device
-            torch_dtype=torch.float32,  # Use float32 on CPU
-            trust_remote_code=True,
-            use_auth_token=hf_token    # Correct keyword for model auth
-        )
-    except Exception as e:
-        logger.error(f"Error loading model: {e}")
-        st.error("Error loading language model. Please check your Hugging Face token and system compatibility.")
-        return None
+        # Load tokenizer
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_id,
+                token=hf_token,
+                trust_remote_code=True
+            )
+        except Exception as e:
+            logger.error(f"Error loading tokenizer: {e}")
+            st.error("Error loading tokenizer. Please check your Hugging Face token.")
+            return None
 
-    try:
+        # Load model on CPU with float32 precision
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_id,
+                device_map={"": device},
+                torch_dtype=torch.float32,
+                trust_remote_code=True,
+                use_auth_token=hf_token
+            )
+        except Exception as e:
+            logger.error(f"Error loading model: {e}")
+            st.error("Error loading language model. Please check your Hugging Face token.")
+            return None
+
         return pipeline(
             "text-generation",
             model=model,
             tokenizer=tokenizer,
-            device=0 if device == "cuda" else -1
+            device=-1  # force CPU
         )
+
     except Exception as e:
-        logger.error(f"Error initializing pipeline: {e}")
+        logger.error(f"Error in get_llm_model: {e}")
         st.error("Error initializing language model pipeline.")
         return None
-
-# Initialize models with error handling
-try:
-    with st.spinner("Loading models... This might take a few minutes."):
-        layout_predictor = get_layout_predictor()
-        model = get_ocr_model()
-        pipe = get_llm_model("cuda")
-        
-        if not all([layout_predictor, model, pipe]):
-            st.error("Failed to initialize one or more models. Please try again later.")
-            st.stop()
-except Exception as e:
-    logger.error(f"Error initializing models: {e}")
-    st.error("Error initializing models. Please try again later.")
-    st.stop()
 
 print("Models loaded")
 
