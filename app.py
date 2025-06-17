@@ -111,40 +111,46 @@ def get_ocr_model():
         st.error("Error loading OCR model. Please try again later.")
         return None
 
+
+
 @st.cache_resource
-def get_llm_model(device):
+def get_llm_model(device="cpu"):
+    model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+    hf_token = st.secrets["hf_token"]
+
     try:
-        model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-        # First try to load tokenizer
-        try:
-            tokenizer = AutoTokenizer.from_pretrained(
-                model_id,
-                token=st.secrets["hf_token"],
-                trust_remote_code=True
-            )
-        except Exception as e:
-            logger.error(f"Error loading tokenizer: {e}")
-            st.error("Error loading tokenizer. Please check your Hugging Face token.")
-            return None
-
-        # Then try to load model
-        try:
-            model = AutoModelForCausalLM.from_pretrained(
-                model_id,
-                device_map="auto",
-                load_in_4bit=True,
-                torch_dtype="auto",
-                token=st.secrets["hf_token"],
-                trust_remote_code=True
-            )
-        except Exception as e:
-            logger.error(f"Error loading model: {e}")
-            st.error("Error loading language model. Please check your Hugging Face token.")
-            return None
-
-        return pipeline("text-generation", model=model, tokenizer=tokenizer)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_id,
+            token=hf_token,
+            trust_remote_code=True
+        )
     except Exception as e:
-        logger.error(f"Error in get_llm_model: {e}")
+        logger.error(f"Error loading tokenizer: {e}")
+        st.error("Error loading tokenizer. Please check your Hugging Face token.")
+        return None
+
+    try:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            device_map={"": device},   # Explicitly set device
+            torch_dtype=torch.float32,  # Use float32 on CPU
+            trust_remote_code=True,
+            use_auth_token=hf_token    # Correct keyword for model auth
+        )
+    except Exception as e:
+        logger.error(f"Error loading model: {e}")
+        st.error("Error loading language model. Please check your Hugging Face token and system compatibility.")
+        return None
+
+    try:
+        return pipeline(
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            device=0 if device == "cuda" else -1
+        )
+    except Exception as e:
+        logger.error(f"Error initializing pipeline: {e}")
         st.error("Error initializing language model pipeline.")
         return None
 
